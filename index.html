@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Felony">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Felony</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --ink: #f2efe9;
+    --dim: #8d887f;
+    --line: #2a2622;
+    --pink: #ff2d95;
+    --amber: #ffb703;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; background: var(--bg); color: var(--ink);
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    overflow: hidden;
+  }
+  #app {
+    height: 100%; height: 100dvh;
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  header h1 { font-size: 15px; letter-spacing: 0.14em; font-weight: 700; }
+  header h1 span { color: var(--pink); }
+  header p { color: var(--dim); font-size: 11px; margin-top: 2px; }
+  button.toggle {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 12px; font: inherit; font-size: 12px;
+  }
+  button.toggle.on { border-color: var(--pink); color: var(--pink); }
+  #stage {
+    height: 0; overflow: hidden; flex-shrink: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    background:
+      radial-gradient(circle at 50% 120%, rgba(255,45,149,0.18), transparent 55%),
+      linear-gradient(#120e12, #0a0a0a);
+  }
+  #stage.on { height: 168px; border-bottom: 1px solid var(--line); }
+  svg.chick { width: 120px; height: 158px; }
+  .chick .hair { transform-origin: 60px 36px; animation: hair 1.6s ease-in-out infinite; }
+  .chick .body { transform-origin: 60px 120px; animation: sway 1.1s ease-in-out infinite; }
+  .chick .blink { transform-origin: center; animation: blink 4.2s infinite; }
+  .chick.jam .hair { animation: bang 0.18s linear 3; }
+  .chick.jam .body { animation: stomp 0.18s linear 3; }
+  @keyframes sway { 50% { transform: rotate(1.4deg); } }
+  @keyframes hair { 50% { transform: rotate(-2deg) translateY(1px); } }
+  @keyframes bang { 50% { transform: rotate(-12deg); } }
+  @keyframes stomp { 50% { transform: translateY(3px) rotate(-1deg); } }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
+  #term {
+    flex: 1; overflow-y: auto; padding: 12px 14px 8px;
+    font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+  }
+  .ln { margin: 0 0 6px; }
+  .ln.sys { color: var(--amber); }
+  .ln.err { color: var(--pink); }
+  .ln.dim { color: var(--dim); }
+  form {
+    display: flex; gap: 8px; align-items: center;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); background: #0d0d0d; flex-shrink: 0;
+  }
+  #prompt { color: var(--pink); font-size: 14px; flex-shrink: 0; }
+  input {
+    flex: 1; background: transparent; border: 0; outline: none;
+    color: var(--ink); font: inherit; font-size: 16px; min-width: 0;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>FELON<span>Y</span></h1>
+      <p id="sub">Felony · Siren · signed in</p>
+    </div>
+    <button class="toggle on" id="chickBtn" type="button">Chick on</button>
+  </header>
+  <div id="stage" class="on" aria-hidden="true">
+    <svg class="chick" id="chick" viewBox="0 0 120 170">
+      <g class="body">
+        <ellipse cx="46" cy="156" rx="16" ry="6" fill="#f4c400"/>
+        <ellipse cx="78" cy="156" rx="16" ry="6" fill="#f4c400"/>
+        <rect x="34" y="148" width="24" height="6" rx="2" fill="#222"/>
+        <rect x="66" y="148" width="24" height="6" rx="2" fill="#222"/>
+        <path d="M48 118 h8 v30 h-8 z M68 118 h8 v30 h-8 z" fill="#2a2a2a"/>
+        <path d="M36 74 h48 v40 h-48 z" fill="#1a1a1a"/>
+        <path d="M34 74 l10-12 h32 l10 12" fill="#243047"/>
+        <path d="M52 88 l6 6 l10-14" fill="none" stroke="#f4c400" stroke-width="3"/>
+        <circle cx="60" cy="58" r="15" fill="#e7b89a"/>
+        <g class="blink">
+          <path d="M50 56 h8 M66 56 h8" stroke="#1a1a1a" stroke-width="2"/>
+        </g>
+        <path d="M55 66 h10" stroke="#c23b6e" stroke-width="2"/>
+        <g class="hair">
+          <path d="M42 64 C36 22 86 18 84 62 C74 36 50 34 42 64 Z" fill="#2f6fed"/>
+          <path d="M48 40 C58 24 78 28 80 50" fill="none" stroke="#ff2d95" stroke-width="5"/>
+          <path d="M70 30 C84 26 92 48 78 58" fill="none" stroke="#3ddc97" stroke-width="4"/>
+          <ellipse cx="46" cy="42" rx="10" ry="6" fill="none" stroke="#d7dde6" stroke-width="2"/>
+          <ellipse cx="74" cy="42" rx="10" ry="6" fill="none" stroke="#d7dde6" stroke-width="2"/>
+          <path d="M36 42 h20 M64 42 h20" stroke="#9aa3b2" stroke-width="2"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <div id="term"></div>
+  <form id="line">
+    <div id="prompt">~/</div>
+    <input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="help">
+  </form>
+</div>
+<script>
+(function () {
+  var KEY = "felony-box-v1";
+  var term = document.getElementById("term");
+  var form = document.getElementById("line");
+  var input = document.getElementById("cmd");
+  var promptEl = document.getElementById("prompt");
+  var chickBtn = document.getElementById("chickBtn");
+  var stage = document.getElementById("stage");
+  var chick = document.getElementById("chick");
+  var sub = document.getElementById("sub");
+  var mode = null;
+  var draft = "";
+  var draftName = "";
+  var hist = [];
+  var histAt = 0;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || typeof data.files !== "object") return null;
+      return data;
+    } catch (e) { return null; }
+  }
+  function blank() {
+    return {
+      cwd: "/home",
+      chick: true,
+      files: {
+        "/home/readme.txt": "This box lives in the app.\nThe iPhone stays Apple's.\nType help."
+      }
+    };
+  }
+  var box = load() || blank();
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(box)); }
+    catch (e) { print("The box is full. Browser storage refused the write.", "err"); }
+  }
+  function print(text, kind) {
+    var div = document.createElement("div");
+    div.className = "ln" + (kind ? " " + kind : "");
+    div.textContent = text;
+    term.appendChild(div);
+    term.scrollTop = term.scrollHeight;
+  }
+  function norm(path) {
+    if (!path) return box.cwd;
+    var full = path.charAt(0) === "/" ? path : (box.cwd === "/" ? "" : box.cwd) + "/" + path;
+    var parts = [];
+    full.split("/").forEach(function (p) {
+      if (!p || p === ".") return;
+      if (p === "..") parts.pop();
+      else parts.push(p);
+    });
+    return "/" + parts.join("/");
+  }
+  function isDirPath(path) {
+    if (path === "/" || path === "") return true;
+    var prefix = path + "/";
+    var keys = Object.keys(box.files);
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].indexOf(prefix) === 0) return true;
+    }
+    return false;
+  }
+  function kids(dir) {
+    var prefix = dir === "/" ? "/" : dir + "/";
+    var names = {};
+    Object.keys(box.files).forEach(function (file) {
+      if (file.indexOf(prefix) !== 0) return;
+      var rest = file.slice(prefix.length);
+      var name = rest.split("/")[0];
+      if (name) names[name] = rest.indexOf("/") > -1 ? "dir" : "file";
+    });
+    return names;
+  }
+  function showPrompt() {
+    var short = box.cwd === "/home" ? "~" : box.cwd;
+    promptEl.textContent = mode ? "..." : short;
+    sub.textContent = mode ? mode + " " + draftName : "box open";
+  }
+  function jam() {
+    if (!box.chick) return;
+    chick.classList.add("jam");
+    setTimeout(function () { chick.classList.remove("jam"); }, 560);
+  }
+  function setChick(on) {
+    box.chick = on;
+    stage.className = on ? "on" : "";
+    chickBtn.className = "toggle" + (on ? " on" : "");
+    chickBtn.textContent = on ? "Chick on" : "Chick off";
+    save();
+  }
+  function help() {
+    print("Felony on the glass. The terminal stays up.", "sys");
+    print("help            these lines");
+    print("ls              what is in this folder");
+    print("cd <folder>     move");
+    print("pwd             where you are");
+    print("cat <file>      read");
+    print("write <file>    then lines, end with a lone .");
+    print("rm <file>       delete a file");
+    print("mkdir <folder>  make a folder by a marker file");
+    print("run             javascript lines, end with a lone .");
+    print("echo <text>     write a line on screen");
+    print("chick           show or hide her");
+    print("export          download the box");
+    print("clear           clear the glass, keep the box");
+    print("who             who is talking");
+    print("The box has no chip menu. Storage is this app's own.", "dim");
+  }
+  function finishWrite() {
+    box.files[draftName] = draft.replace(/\n$/, "");
+    save();
+    print("wrote " + draftName, "sys");
+    mode = null; draft = ""; draftName = "";
+  }
+  function finishRun() {
+    var code = draft.replace(/\n$/, "");
+    mode = null; draft = ""; draftName = "";
+    showPrompt();
+    var iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "allow-scripts");
+    iframe.style.display = "none";
+    var id = String(Math.random()).slice(2);
+    var done = false;
+    function close(msg, kind) {
+      if (done) return;
+      done = true;
+      window.removeEventListener("message", onMsg);
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      print(msg, kind);
+    }
+    function onMsg(ev) {
+      if (!ev.data || ev.data.id !== id) return;
+      var out = ev.data.log && ev.data.log.length ? ev.data.log.join("\n") + "\n" : "";
+      if (ev.data.error) close(out + ev.data.error, "err");
+      else close(out + (ev.data.result === "undefined" ? "" : ev.data.result), null);
+    }
+    window.addEventListener("message", onMsg);
+    iframe.onload = function () {
+      iframe.contentWindow.postMessage({ id: id, code: code }, "*");
+    };
+    iframe.srcdoc = "<!DOCTYPE html><script>window.onmessage=function(e){var log=[];var console={log:function(){var a=[].slice.call(arguments);log.push(a.join(' '))}};var result,error;try{result=eval(e.data.code)}catch(err){error=String(err)}parent.postMessage({id:e.data.id,result:String(result),error:error,log:log},'*')}<\/script>";
+    document.body.appendChild(iframe);
+    setTimeout(function () { close("Cut. That run went past four seconds.", "err"); }, 4000);
+  }
+  function command(line) {
+    var trimmed = line.trim();
+    var sp = trimmed.indexOf(" ");
+    var name = sp === -1 ? trimmed : trimmed.slice(0, sp);
+    var arg = sp === -1 ? "" : trimmed.slice(sp + 1).trim();
+    if (name === "help") return help();
+    if (name === "who") {
+      print("Signed in. Felony, with Siren in her. This glass does not call the laptop.", "sys");
+      return;
+    }
+    if (name === "clear") { term.innerHTML = ""; return; }
+    if (name === "chick") { setChick(!box.chick); print(box.chick ? "She's up." : "She's off. Terminal stays.", "sys"); return; }
+    if (name === "pwd") { print(box.cwd); return; }
+    if (name === "echo") { print(arg); return; }
+    if (name === "ls") {
+      var dir = arg ? norm(arg) : box.cwd;
+      if (!isDirPath(dir) && !box.files[dir]) { print("No such folder.", "err"); return; }
+      if (box.files[dir] && !isDirPath(dir)) { print(arg); return; }
+      var list = kids(dir);
+      var keys = Object.keys(list).sort();
+      print(keys.length ? keys.map(function (k) { return list[k] === "dir" ? k + "/" : k; }).join("\n") : "(empty)", keys.length ? null : "dim");
+      return;
+    }
+    if (name === "cd") {
+      var next = norm(arg || "/home");
+      if (!isDirPath(next)) { print("No such folder.", "err"); return; }
+      box.cwd = next === "/" ? "/" : next;
+      save();
+      return;
+    }
+    if (name === "cat") {
+      var file = norm(arg);
+      if (!box.files.hasOwnProperty(file)) { print("No such file.", "err"); return; }
+      print(box.files[file]);
+      return;
+    }
+    if (name === "rm") {
+      var target = norm(arg);
+      if (!box.files.hasOwnProperty(target)) { print("No such file.", "err"); return; }
+      delete box.files[target];
+      save();
+      print("removed " + target, "sys");
+      return;
+    }
+    if (name === "mkdir") {
+      var folder = norm(arg);
+      if (!arg) { print("Name the folder.", "err"); return; }
+      box.files[folder + "/.keep"] = "";
+      save();
+      print(folder, "sys");
+      return;
+    }
+    if (name === "write") {
+      if (!arg) { print("Name the file.", "err"); return; }
+      mode = "write";
+      draftName = norm(arg);
+      draft = "";
+      print("Writing " + draftName + ". End with a lone .", "dim");
+      return;
+    }
+    if (name === "run") {
+      mode = "run";
+      draft = arg ? arg + "\n" : "";
+      draftName = "";
+      if (arg) { finishRun(); return; }
+      print("JavaScript. End with a lone .", "dim");
+      return;
+    }
+    if (name === "export") {
+      var blob = new Blob([JSON.stringify(box.files, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "felony-box.json";
+      a.click();
+      print("Download started.", "sys");
+      return;
+    }
+    print("Unknown. Type help.", "err");
+  }
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var text = input.value;
+    input.value = "";
+    hist.push(text);
+    histAt = hist.length;
+    jam();
+    if (mode) {
+      print(text, "dim");
+      if (text.trim() === ".") {
+        if (mode === "write") finishWrite();
+        else finishRun();
+      } else {
+        draft += text + "\n";
+      }
+      showPrompt();
+      return;
+    }
+    print(promptEl.textContent + " " + text, "dim");
+    if (text.trim()) command(text.trim());
+    showPrompt();
+  });
+  input.addEventListener("keydown", function (ev) {
+    if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
+    if (!hist.length || mode) return;
+    ev.preventDefault();
+    if (ev.key === "ArrowUp") histAt = Math.max(0, histAt - 1);
+    else histAt = Math.min(hist.length, histAt + 1);
+    input.value = histAt >= hist.length ? "" : hist[histAt];
+  });
+  chickBtn.addEventListener("click", function () { setChick(!box.chick); });
+  setChick(box.chick !== false);
+  print("Signed in. Felony, with Siren in her.", "sys");
+  print("This copy stays on the phone. The laptop can be off.", "dim");
+  print("Type help. Ramona is a switch, not the app.", "dim");
+  showPrompt();
+  input.focus();
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
